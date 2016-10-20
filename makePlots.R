@@ -1,9 +1,13 @@
 if(!exists('taxas'))source('analyzeNt.R')
 
-shortNames<-sub('_S[0-9]+_L[0-9]+_R.*$','',sub('blast_trim_','',names(taxas)))
-taxaTab<-table(unlist(lapply(taxas,function(x)x$best)),rep(shortNames,sapply(taxas,nrow)))
+
+humanFilter<-lapply(taxas,function(x)x[x[,'class']!='Mammalia'|is.na(x[,'class']),])
+humanFilter<-humanFilter[!grepl('_Undetermined_',names(humanFilter))]
+shortNames<-sub('_S[0-9]+_L[0-9]+_R.*$','',sub('blast_trim_','',names(humanFilter)))
+taxaTab<-table(unlist(lapply(humanFilter,function(x)x$best)),rep(shortNames,sapply(humanFilter,nrow)))
 propTab<-apply(taxaTab,2,function(x)x/sum(x))
 cutTab<-propTab[apply(propTab,1,max)>.01,]
+print(apply(taxaTab,2,sum))
 
 breaks<-c(0,seq(min(cutTab)*.999,max(cutTab)*1.001,length.out=501))
 cols<-c('white',tail(rev(heat.colors(520)),500))
@@ -32,9 +36,9 @@ newOrder<-order(types,ifelse(is.na(types2),'ZZ',types2))
 cutTab<-cutTab[order(apply(cutTab,1,sum)),newOrder]
 types<-types[newOrder]
 types2<-types2[newOrder]
-notInControl<-which(apply(cutTab[,types=='h20'],1,sum)==0)
+notInControl<-which(apply(cutTab[,types=='h20'],1,sum)==0 &apply(cutTab[,types!='h20']>0,1,sum)>1)
 #cutTab<-cutTab[order(apply(cutTab,1,sum)),]
-pdf('out/heatSort.pdf',width=9,height=13)
+pdf('out/heatSort.pdf',width=9,height=16)
   par(mar=c(.1,15,7,.1))
   image(1:ncol(cutTab),1:nrow(cutTab),t(cutTab),col=cols,breaks=breaks,xlab='',ylab='',xaxt='n',yaxt='n')
   axis(3,1:ncol(cutTab),colnames(cutTab),las=2)
@@ -43,7 +47,10 @@ pdf('out/heatSort.pdf',width=9,height=13)
   abline(h=2:nrow(cutTab)-.5,col='#00000033')
   abline(h=2:nrow(cutTab)-.5,col='#00000033')
   abline(v=2:ncol(cutTab)-.5,col='#00000011')
+  points(rep(convertLineToUser(.75,2),length(notInControl)),notInControl,pch='*',xpd=NA,cex=2,col='red')
   box()
   insetLegend(breaks,cols,insetPos=c(.05,.93,.25,.945))
 dev.off()
+
+virusHits<-mapply(function(tax,reads)tax[tax$qName %in% reads,],taxonomy,lapply(taxas,function(x)rownames(x)[x$best=='Viruses']),SIMPLIFY=FALSE)
 

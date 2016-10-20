@@ -19,9 +19,11 @@ blastFiles<-list.files('work','.blast.gz$',full.names=TRUE)
 taxas<-mclapply(blastFiles,function(ii){
   message(ii)
   outFile<-sub('.blast.gz$','_taxa.csv',ii)
-  if(file.exists(outFile)){
+  outFile2<-sub('.blast.gz$','_allHits.csv',ii)
+  if(file.exists(outFile)&file.exists(outFile2)){
     message(' Reading ',outFile)
     taxaAssigns<-read.csv(outFile,row.names=1,stringsAsFactors=FALSE)
+    taxonomy<-read.csv(outFile2,stringsAsFactors=FALSE)
   }else{
     message(' Creating ',outFile)
     x<-read.blast(ii)
@@ -30,14 +32,19 @@ taxas<-mclapply(blastFiles,function(ii){
     x$maxBit<-ave(x$score,x$qName,FUN=max)
     x<-x[x$score==x$maxBit&!is.na(x$taxa),]
     taxonomy<-getTaxonomy(x$taxa,taxaNodes,taxaNames,mc.cores=1)
-    taxaAssigns<-do.call(rbind,by(as.data.frame(taxonomy,stringsAsFactors=FALSE),x$qName,FUN=condenseTaxa))
+    taxonomy<-as.data.frame(taxonomy,stringsAsFactors=FALSE)
+    taxaAssigns<-do.call(rbind,by(taxonomy,x$qName,FUN=condenseTaxa))
+    taxonomy$qName<-x$qName
+    write.csv(taxonomy,outFile2)
     taxaAssigns$best<-apply(taxaAssigns,1,lastNotNa)
     bestScore<-x[!duplicated(x$qName),c('qName','alignLength','percID')]
     rownames(bestScore)<-bestScore$qName
-    taxaAssigns<-cbind(taxaAssigns,bestScore[rownames(taxaAssigns),c('alignLength','percIdent')])
+    taxaAssigns<-cbind(taxaAssigns,bestScore[rownames(taxaAssigns),c('alignLength','percID')])
     write.csv(taxaAssigns,outFile)
   }
-  return(taxaAssigns)
+  return(list('taxa'=taxaAssigns,'taxonomy'=taxonomy))
 },mc.cores=15)
-names(taxas)<-basename(blastFiles)
 
+taxonomy<-lapply(taxas,'[[','taxonomy')
+taxas<-lapply(taxas,'[[','taxa')
+names(taxas)<-names(taxonomy)<-basename(blastFiles)
