@@ -16,7 +16,7 @@ mclapply(unique(baseNames),function(base){
   writeLines(filter,tmp)
   datFiles<-sub('blat.gz','fastq.gz',sub('work/','data/',files))
   outFiles<-sub('data/','work/trim_',datFiles)
-  cmd<-sprintf('removereads -f %s %s -o %s',tmp,paste(datFiles,collapse=' '),paste(outFiles,collapse=','))
+  cmd<-sprintf('removereads -f %s %s -o %s',tmp,paste(datFiles,collapse=' '),paste(outFiles,collapse=' '))
   message(cmd)
   system(cmd)
   file.remove(tmp)
