@@ -6,9 +6,9 @@ library(parallel)
 getNamesAndNodes()
 taxaNodes<-read.nodes('nodes.dmp')
 taxaNames<-read.names('names.dmp')
-if(!file.exists('accessionTaxa.sql')){
+sqlFile<-'accessionTaxa.sql'
+if(!file.exists(sqlFile)){
   tmp<-tempdir()
-  sqlFile<-'accessionTaxa.sql'
   #this is a big download
   getAccession2taxid(tmp)
   read.accession2taxid(list.files(tmp,'accession2taxid.gz$',full.names=TRUE),sqlFile)
