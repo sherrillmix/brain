@@ -26,13 +26,18 @@ taxas<-mclapply(blastFiles,function(ii){
     taxonomy<-read.csv(outFile2,stringsAsFactors=FALSE)
   }else{
     message(' Creating ',outFile)
+    message('  Reading blast')
     x<-read.blast(ii)
     x$accession<-sapply(strsplit(x$tName,'\\|'),'[[',4)
+    message('  Accession to taxonomy')
     x$taxa<-accessionToTaxa(x$accession,sqlFile)
     x$maxBit<-ave(x$score,x$qName,FUN=max)
     x<-x[x$score==x$maxBit&!is.na(x$taxa),]
+    gc()
+    message('  Getting upstream taxonomy')
     taxonomy<-getTaxonomy(x$taxa,taxaNodes,taxaNames,mc.cores=1)
     taxonomy<-as.data.frame(taxonomy,stringsAsFactors=FALSE)
+    message('  Condensing taxonomy')
     taxaAssigns<-do.call(rbind,by(taxonomy,x$qName,FUN=condenseTaxa))
     taxonomy$qName<-x$qName
     write.csv(taxonomy,outFile2)
@@ -43,7 +48,7 @@ taxas<-mclapply(blastFiles,function(ii){
     write.csv(taxaAssigns,outFile)
   }
   return(list('taxa'=taxaAssigns,'taxonomy'=taxonomy))
-},mc.cores=15)
+},mc.cores=15,mc.preschedule=FALSE)
 
 taxonomy<-lapply(taxas,'[[','taxonomy')
 taxas<-lapply(taxas,'[[','taxa')
