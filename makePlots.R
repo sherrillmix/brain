@@ -52,5 +52,4 @@ pdf('out/heatSort.pdf',width=9,height=16)
   insetLegend(breaks,cols,insetPos=c(.05,.93,.25,.945))
 dev.off()
 
-virusHits<-mapply(function(tax,reads)tax[tax$qName %in% reads,],taxonomy,lapply(taxas,function(x)rownames(x)[x$best=='Viruses']),SIMPLIFY=FALSE)
 
