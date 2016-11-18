@@ -16,7 +16,7 @@ if(!file.exists(sqlFile)){
 }
 
 blastFiles<-list.files('work','.blast.gz$',full.names=TRUE)
-taxas<-mclapply(blastFiles,function(ii){
+taxas<-lapply(blastFiles,function(ii){
   message(ii)
   outFile<-sub('.blast.gz$','_taxa.csv',ii)
   outFile2<-sub('.blast.gz$','_allHits.csv',ii)
@@ -35,7 +35,7 @@ taxas<-mclapply(blastFiles,function(ii){
     x<-x[x$score==x$maxBit&!is.na(x$taxa),]
     gc()
     message('  Getting upstream taxonomy')
-    taxonomy<-getTaxonomy(x$taxa,taxaNodes,taxaNames,mc.cores=1)
+    taxonomy<-getTaxonomy(x$taxa,taxaNodes,taxaNames,mc.cores=10)
     taxonomy<-as.data.frame(taxonomy,stringsAsFactors=FALSE)
     message('  Condensing taxonomy')
     taxaAssigns<-do.call(rbind,by(taxonomy,x$qName,FUN=condenseTaxa))
@@ -48,7 +48,7 @@ taxas<-mclapply(blastFiles,function(ii){
     write.csv(taxaAssigns,outFile)
   }
   return(list('taxa'=taxaAssigns,'taxonomy'=taxonomy))
-},mc.cores=15,mc.preschedule=FALSE)
+})
 
 taxonomy<-lapply(taxas,'[[','taxonomy')
 taxas<-lapply(taxas,'[[','taxa')
